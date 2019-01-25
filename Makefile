@@ -33,4 +33,4 @@ bounded-buffer: bounded-buffer.c bounded-buffer.h lib/semaphore_support.o
 clean:
 	$(RM) $(PROGS) *.o
 	$(RM) -rf *.dSYM
-	cd ../lib && make clean
+	cd lib && make clean
