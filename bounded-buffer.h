@@ -3,6 +3,8 @@
  *
  * CS 441/541: Bounded Buffer (Project 4)
  *
+ * @author Zach Dummer
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
