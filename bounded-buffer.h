@@ -24,7 +24,7 @@
  * Structures
  *****************************/
 typedef struct buffer {
-	int intMutex;
+	semaphore_t mutex;
 	int arrBufferArray[];
 } buffer;
 
@@ -37,13 +37,39 @@ int g_intNumProducerThreads = 0;
 int g_intNumConsumerThreads = 0;
 
 buffer *g_oBuffer;
+int g_intProducerIndex = 0;
+int g_intTotalProduced = 0;
+int g_intConsumerIndex = 0;
+int g_intTotalConsumed = 0;
+
+char *g_strProducerPointer = "^";
+char *g_strConsumerPointer = "v";
 
 /*****************************
  * Function Declarations
  *****************************/
 void parseCommandLineArgs(int argc, char * argv[]);
+
 bool isNumber(const char *strToCheck);
+
 void printError();
+
 void printGlobalVariables();
+
 void initBuffer();
+
 void printBuffer();
+
+void createProducerThreads();
+
+void createConsumerThreads();
+
+void *produce(void *threadId);
+
+void *consume(void *threadId);
+
+int buffer_add(int item);
+
+int buffer_get(int item);
+
+void printAndExit();

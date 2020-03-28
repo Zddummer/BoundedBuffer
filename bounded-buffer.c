@@ -15,8 +15,16 @@ int main(int argc, char * argv[])
 	parseCommandLineArgs(argc, argv);
 	printGlobalVariables();
 	initBuffer();
+
+	printf("Initial Buffer:               ");
 	printBuffer();
 
+	createProducerThreads();
+	createConsumerThreads();
+	
+	sleep(g_intTimeToLive);
+
+	printAndExit();
 	printf("--Finish--\n");
     return 0;
 }
@@ -26,9 +34,7 @@ void parseCommandLineArgs(int argc, char * argv[])
 
 	if(argc != 4 && argc != 5)
 	{
-		printf("argc : %d\n", argc);
 		printError();
-		exit(0);
 	}
 
 	int index;
@@ -41,15 +47,31 @@ void parseCommandLineArgs(int argc, char * argv[])
 			{
 				case 1 :
 					g_intTimeToLive = atoi(argv[index]);
+					if( g_intTimeToLive <= 0)
+					{
+						printError();
+					}
 					break;
 				case 2 :
 					g_intNumProducerThreads = atoi(argv[index]);
+					if( g_intNumProducerThreads <= 0)
+					{
+						printError();
+					}
 					break;
 				case 3 :
 					g_intNumConsumerThreads = atoi(argv[index]);
+					if( g_intNumConsumerThreads <= 0)
+					{
+						printError();
+					}
 					break;
 				case 4 :
 					g_intBufferSize = atoi(argv[index]);
+					if( g_intBufferSize <= 0)
+					{
+						printError();
+					}
 					break;
 				default :
 					break;
@@ -58,7 +80,6 @@ void parseCommandLineArgs(int argc, char * argv[])
 		else
 		{
 			printError();
-			exit(0);
 		}
 	}
 
@@ -80,12 +101,14 @@ void printError()
 {
 	printf("ERROR: Invalid number of arguments\n");
 	printf("-------------------------------------------------------\n");
-	printf("Please enter 3 or 4 integers:\n");
+	printf("Please enter 3 or 4 integers greater than zero:\n");
 	printf("\t<integer> - Time to live (seconds)\n");
 	printf("\t<integer> - Number of producer threads\n");
 	printf("\t<integer> - Number of consumer threads\n");
 	printf("\t(optional) <integer> - Buffer size (defaults to 10)\n");
 	printf("-------------------------------------------------------\n");
+
+	exit(0);
 }
 
 void printGlobalVariables()
@@ -117,7 +140,81 @@ void printBuffer()
 	for(index = 0; index < g_intBufferSize; index++)
 	{
 		printf(" %d", g_oBuffer->arrBufferArray[index]);
+
+		if(index == g_intProducerIndex)
+		{
+			printf("%s", g_strProducerPointer);
+		}
+
+		if (index == g_intConsumerIndex)
+		{
+			printf("%s", g_strConsumerPointer);
+		}
 	}
 
 	printf("]\n");
+}
+
+void createProducerThreads()
+{
+	pthread_t arrThreads[g_intNumProducerThreads];
+	int intReturnCode;
+	int index;
+
+	for(index = 0; index < g_intNumProducerThreads; index++)
+	{
+		intReturnCode = pthread_create(&arrThreads[index], NULL, produce, (void *)(intptr_t)index);
+
+		if(0 != intReturnCode)
+		{
+			printf("ERROR when creating thread!\n");
+			exit(-1);
+		}
+	}
+}
+
+void createConsumerThreads()
+{
+	pthread_t arrThreads[g_intNumConsumerThreads];
+	int intReturnCode;
+	int index;
+
+	for(index = 0; index < g_intNumConsumerThreads; index++)
+	{
+		intReturnCode = pthread_create(&arrThreads[index], NULL, consume, (void *)(intptr_t)index);
+
+		if(0 != intReturnCode)
+		{
+			printf("ERROR when creating thread!\n");
+			exit(-1);
+		}
+	}
+}
+
+void *produce(void *threadId)
+{
+	// int tid = (intptr_t)threadId;
+	// printf("Producer thread: #%d\n", tid);
+
+
+
+	pthread_exit(NULL);
+}
+
+void *consume(void *threadId)
+{
+	// int tid = (intptr_t)threadId;
+	// printf("Consumer thread: #%d\n", tid);
+
+	pthread_exit(NULL);
+}
+
+void printAndExit()
+{
+	printf("-----------+---------\n");
+	printf("Produced   |   %d\n", g_intTotalProduced);
+	printf("Consumed   |   %d\n", g_intTotalConsumed);
+	printf("-----------+---------\n");
+
+	exit(0);
 }
