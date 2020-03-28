@@ -16,7 +16,7 @@ int main(int argc, char * argv[])
 	printGlobalVariables();
 	initBuffer();
 
-	printf("Initial Buffer:                      ");
+	printf("Initial Buffer:                     ");
 	printBuffer();
 
 	createProducerThreads();
@@ -122,15 +122,16 @@ void printGlobalVariables()
 
 void initBuffer()
 {
-	g_oBuffer = malloc(sizeof(buffer) + g_intBufferSize);
-
-	semaphore_create(&g_oBuffer->mutex, 1);
+	g_arrBuffer = malloc(sizeof(int) * g_intBufferSize);
 
 	int index;
 	for(index = 0; index < g_intBufferSize; index++)
 	{
-		g_oBuffer->arrBufferArray[index] = -1;
+		g_arrBuffer[index] = -1;
 	}
+
+	semaphore_create(&g_semMutex, 1);
+	semaphore_create(&g_semItems, 0);
 
 }
 
@@ -141,7 +142,7 @@ void printBuffer()
 	int index;
 	for(index = 0; index < g_intBufferSize; index++)
 	{
-		printf(" %d", g_oBuffer->arrBufferArray[index]);
+		printf(" %d", g_arrBuffer[index]);
 
 		if(index == g_intProducerIndex)
 		{
@@ -195,26 +196,40 @@ void createConsumerThreads()
 
 void *produce(void *threadId)
 {
-	int intRandomNumber = getRandomNumber();
+	while (true)
+	{
+		semaphore_wait(&g_semMutex);
 
-	semaphore_wait(&g_oBuffer->mutex);
+		int intRandomNumber = getRandomNumber();
+		int intSleepLength = sleepRandomLength();
 
-	int intSleepLength = sleepRandomLength();
-	printf("Producer  %d: ", intSleepLength);
+		buffer_add(intRandomNumber);
+		printf("Producer:  %d: Total %3d, Value  %d   ", intSleepLength, g_intTotalProduced, intRandomNumber);
+		printBuffer();
 
-	buffer_add(intRandomNumber);
-	printf("Total   %d, Value  %d     ", g_intTotalProduced, intRandomNumber);
-	printBuffer();
-
-	semaphore_post(&g_oBuffer->mutex);
+		semaphore_post(&g_semMutex);
+		semaphore_post(&g_semItems);
+	}
 
 	pthread_exit(NULL);
 }
 
 void *consume(void *threadId)
 {
-	// int tid = (intptr_t)threadId;
-	// printf("Consumer thread: #%d\n", tid);
+	while (true)
+	{
+		semaphore_wait(&g_semItems);
+		semaphore_wait(&g_semMutex);
+
+		int intNumberFromBuffer;
+		int intSleepLength = sleepRandomLength();
+
+		buffer_get(&intNumberFromBuffer);
+		printf("Consumer:  %d: Total %3d, Value  %d   ", intSleepLength, g_intTotalConsumed, intNumberFromBuffer);
+		printBuffer();
+
+		semaphore_post(&g_semMutex);
+	}
 
 	pthread_exit(NULL);
 }
@@ -228,27 +243,37 @@ int sleepRandomLength()
 {
 	int intRandomNumber = rand() % 2;
 
-	sleep(intRandomNumber);
+	usleep(intRandomNumber * 100000);
 
 	return intRandomNumber;
 }
 
 int buffer_add(int item)
 {
-	g_oBuffer->arrBufferArray[g_intProducerIndex] = item;
-	g_intProducerIndex++;
+	g_arrBuffer[g_intProducerIndex] = item;
+
 	g_intTotalProduced++;
+	g_intProducerIndex++;
 
 	if(g_intProducerIndex == g_intBufferSize)
 	{
 		g_intProducerIndex = 0;
 	}
-
 	return 0;
 }
 
-int buffer_get(int item)
+int buffer_get(int *item)
 {
+	*item = g_arrBuffer[g_intConsumerIndex];
+	g_arrBuffer[g_intConsumerIndex] = -1;
+
+	g_intTotalConsumed++;
+	g_intConsumerIndex++;
+
+	if(g_intConsumerIndex == g_intBufferSize)
+	{
+		g_intConsumerIndex = 0;
+	}
 	return 0;
 }
 

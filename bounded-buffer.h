@@ -23,10 +23,7 @@
 /*****************************
  * Structures
  *****************************/
-typedef struct buffer {
-	semaphore_t mutex;
-	int arrBufferArray[];
-} buffer;
+
 
 /*****************************
  * Global Variables
@@ -36,7 +33,10 @@ int g_intTimeToLive = 0;
 int g_intNumProducerThreads = 0;
 int g_intNumConsumerThreads = 0;
 
-buffer *g_oBuffer;
+int * g_arrBuffer;
+semaphore_t g_semMutex;
+semaphore_t g_semItems;
+
 int g_intProducerIndex = 0;
 int g_intTotalProduced = 0;
 int g_intConsumerIndex = 0;
@@ -74,6 +74,6 @@ int sleepRandomLength();
 
 int buffer_add(int item);
 
-int buffer_get(int item);
+int buffer_get(int *item);
 
 void printAndExit();
