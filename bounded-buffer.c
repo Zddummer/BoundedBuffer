@@ -16,7 +16,7 @@ int main(int argc, char * argv[])
 	printGlobalVariables();
 	initBuffer();
 
-	printf("Initial Buffer:               ");
+	printf("Initial Buffer:                      ");
 	printBuffer();
 
 	createProducerThreads();
@@ -124,6 +124,8 @@ void initBuffer()
 {
 	g_oBuffer = malloc(sizeof(buffer) + g_intBufferSize);
 
+	semaphore_create(&g_oBuffer->mutex, 1);
+
 	int index;
 	for(index = 0; index < g_intBufferSize; index++)
 	{
@@ -193,10 +195,18 @@ void createConsumerThreads()
 
 void *produce(void *threadId)
 {
-	// int tid = (intptr_t)threadId;
-	// printf("Producer thread: #%d\n", tid);
+	int intRandomNumber = getRandomNumber();
 
+	semaphore_wait(&g_oBuffer->mutex);
 
+	int intSleepLength = sleepRandomLength();
+	printf("Producer  %d: ", intSleepLength);
+
+	buffer_add(intRandomNumber);
+	printf("Total   %d, Value  %d     ", g_intTotalProduced, intRandomNumber);
+	printBuffer();
+
+	semaphore_post(&g_oBuffer->mutex);
 
 	pthread_exit(NULL);
 }
@@ -207,6 +217,39 @@ void *consume(void *threadId)
 	// printf("Consumer thread: #%d\n", tid);
 
 	pthread_exit(NULL);
+}
+
+int getRandomNumber()
+{
+	return rand() % 10;
+}
+
+int sleepRandomLength()
+{
+	int intRandomNumber = rand() % 2;
+
+	sleep(intRandomNumber);
+
+	return intRandomNumber;
+}
+
+int buffer_add(int item)
+{
+	g_oBuffer->arrBufferArray[g_intProducerIndex] = item;
+	g_intProducerIndex++;
+	g_intTotalProduced++;
+
+	if(g_intProducerIndex == g_intBufferSize)
+	{
+		g_intProducerIndex = 0;
+	}
+
+	return 0;
+}
+
+int buffer_get(int item)
+{
+	return 0;
 }
 
 void printAndExit()

@@ -68,6 +68,10 @@ void *produce(void *threadId);
 
 void *consume(void *threadId);
 
+int getRandomNumber();
+
+int sleepRandomLength();
+
 int buffer_add(int item);
 
 int buffer_get(int item);
